@@ -32,6 +32,13 @@ dependencies {
     implementation("com.google.api-client:google-api-client:1.33.0")
     implementation("com.google.oauth-client:google-oauth-client-jetty:1.32.1")
     implementation("com.google.apis:google-api-services-sheets:v4-rev20210629-1.32.1")
+    implementation("com.google.inject:guice:4.2.0")
+    implementation("dev.misfitlabs.kotlinguice4:kotlin-guice:1.4.0")
+    implementation("io.github.microutils:kotlin-logging:1.7.6")
+    implementation("ch.qos.logback:logback-classic:1.2.3")
+    implementation("org.slf4j:jcl-over-slf4j:1.7.25")
+    implementation("org.slf4j:jul-to-slf4j:1.7.25")
+    implementation("org.slf4j:slf4j-api:1.7.25")
 
 }
 
