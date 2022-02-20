@@ -1,11 +1,12 @@
 package the.grand.abacus
 
 import com.google.inject.Inject
+import the.grand.abacus.NamedGuiceObjectConstants.APP_PROPERTIES
 import java.util.*
 import javax.inject.Named
 
 class Configuration @Inject constructor(
-    @Named("CONFIG") val config: Properties
+    @Named(APP_PROPERTIES) val config: Properties
 ) {
 
     fun appName(): String {
