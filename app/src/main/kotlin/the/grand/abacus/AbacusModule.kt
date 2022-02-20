@@ -4,6 +4,7 @@ import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.http.javanet.NetHttpTransport
 import com.google.api.client.json.JsonFactory
 import com.google.api.client.json.gson.GsonFactory
+import com.google.api.services.sheets.v4.Sheets
 import com.google.api.services.sheets.v4.SheetsScopes
 import com.google.inject.Provides
 import com.google.inject.Singleton
@@ -67,5 +68,19 @@ class AbacusModule : KotlinModule() {
     @Named("PAYPAL_EXPORTS")
     fun paypal(): File {
         return File("config/paypal")
+    }
+
+    @Provides
+    @Singleton
+    fun sheets(
+        configuration: Configuration,
+        credentialFactory: CredentialFactory,
+        jsonFactory: JsonFactory,
+        transport: NetHttpTransport
+    ): Sheets {
+        return Sheets
+            .Builder(transport, jsonFactory, credentialFactory.getCredentials())
+            .setApplicationName(configuration.appName())
+            .build()
     }
 }

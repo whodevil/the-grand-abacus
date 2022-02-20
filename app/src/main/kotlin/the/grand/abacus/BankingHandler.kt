@@ -24,7 +24,7 @@ class BankingHandler @Inject constructor(
         logger.info { "parsing bank exports" }
         return bankExports.listFiles()!!.associate { file->
             val transactionList = transactionList(file)
-            file.name to transactionList.transactions.map { transaction ->
+            file.name.dropLast(4) to transactionList.transactions.map { transaction ->
                 val type = transactionType(transaction)
                 val group = group(transaction)
                 val date = ZonedDateTime.ofInstant(transaction.datePosted.toInstant(), ZoneId.systemDefault())
@@ -53,7 +53,6 @@ class BankingHandler @Inject constructor(
 
     fun readPaypalExport(): Map<String, List<Transaction>> {
         logger.info { "parsing paypal exports" }
-
         return paypalExports.listFiles()!!.associate { file ->
             val completed: List<Transaction>
             file.reader(Charsets.UTF_8).use{ reader ->
@@ -67,7 +66,7 @@ class BankingHandler @Inject constructor(
                     buildTransaction(it)
                 }
             }
-            file.name to completed
+            file.name.dropLast(4) to completed
         }
     }
 
