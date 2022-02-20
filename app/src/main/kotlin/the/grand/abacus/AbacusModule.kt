@@ -36,14 +36,14 @@ class AbacusModule : KotlinModule() {
     @Singleton
     @Named("TOKENS_PATH")
     fun tokenPath(): File {
-        return File("./config/token")
+        return File("config/token")
     }
 
     @Provides
     @Singleton
     @Named("CREDENTIALS_JSON")
     fun credentialsJsonFile(): File {
-        return File("./config/credentials.json")
+        return File("config/credentials.json")
     }
 
     @Provides
@@ -51,7 +51,21 @@ class AbacusModule : KotlinModule() {
     @Named("CONFIG")
     fun configMap(): Properties {
         val config = Properties()
-        config.load(File("./config/app.properties").inputStream())
+        config.load(File("config/app.properties").inputStream())
         return config
+    }
+
+    @Provides
+    @Singleton
+    @Named("BANK_EXPORTS")
+    fun exports(): File {
+        return File("config/bank")
+    }
+
+    @Provides
+    @Singleton
+    @Named("PAYPAL_EXPORTS")
+    fun paypal(): File {
+        return File("config/paypal")
     }
 }
