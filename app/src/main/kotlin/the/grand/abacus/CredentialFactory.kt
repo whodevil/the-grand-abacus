@@ -9,6 +9,9 @@ import com.google.api.client.http.javanet.NetHttpTransport
 import com.google.api.client.json.JsonFactory
 import com.google.api.client.util.store.FileDataStoreFactory
 import com.google.inject.Inject
+import the.grand.abacus.NamedGuiceObjectConstants.CREDENTIALS_JSON
+import the.grand.abacus.NamedGuiceObjectConstants.SCOPES
+import the.grand.abacus.NamedGuiceObjectConstants.TOKENS_PATH
 import java.io.File
 import java.io.InputStreamReader
 import javax.inject.Named
@@ -17,9 +20,9 @@ class CredentialFactory @Inject constructor(
     private val transport: NetHttpTransport,
     private val configuration: Configuration,
     private val jsonFactory: JsonFactory,
-    @Named("SCOPES") private val scopes: List<String>,
-    @Named("TOKENS_PATH") private val tokensPath: File,
-    @Named("CREDENTIALS_JSON") private val credentialsFile: File
+    @Named(SCOPES) private val scopes: List<String>,
+    @Named(TOKENS_PATH) private val tokensPath: File,
+    @Named(CREDENTIALS_JSON) private val credentialsFile: File
 ) {
     fun getCredentials(): Credential {
         val clientSecrets = GoogleClientSecrets.load(jsonFactory, InputStreamReader(credentialsFile.inputStream()))

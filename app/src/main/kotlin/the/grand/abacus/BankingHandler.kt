@@ -7,6 +7,8 @@ import com.webcohesion.ofx4j.domain.data.banking.BankStatementResponseTransactio
 import com.webcohesion.ofx4j.domain.data.common.TransactionList
 import com.webcohesion.ofx4j.io.AggregateUnmarshaller
 import mu.KotlinLogging
+import the.grand.abacus.NamedGuiceObjectConstants.BANK_EXPORTS
+import the.grand.abacus.NamedGuiceObjectConstants.PAYPAL_EXPORTS
 import java.io.File
 import java.time.ZoneId
 import java.time.ZonedDateTime
@@ -17,8 +19,8 @@ import javax.inject.Named
 private val logger = KotlinLogging.logger {}
 
 class BankingHandler @Inject constructor(
-    @Named("BANK_EXPORTS") private val bankExports: File,
-    @Named("PAYPAL_EXPORTS") private val paypalExports: File
+    @Named(BANK_EXPORTS) private val bankExports: File,
+    @Named(PAYPAL_EXPORTS) private val paypalExports: File
 ) {
     fun readBankExport(): Map<String, List<Transaction>> {
         logger.info { "parsing bank exports" }

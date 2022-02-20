@@ -9,11 +9,32 @@ import com.google.api.services.sheets.v4.SheetsScopes
 import com.google.inject.Provides
 import com.google.inject.Singleton
 import dev.misfitlabs.kotlinguice4.KotlinModule
+import the.grand.abacus.GuiceConstants.APP_PROPERTIES
+import the.grand.abacus.GuiceConstants.BANK_REPORT_DIR
+import the.grand.abacus.GuiceConstants.CONFIG_DIR
+import the.grand.abacus.GuiceConstants.CREDENTIALS_JSON
+import the.grand.abacus.GuiceConstants.PAYPAL_REPORT_DIR
+import the.grand.abacus.GuiceConstants.TOKEN_DIR
+import the.grand.abacus.NamedGuiceObjectConstants.BANK_EXPORTS
+import the.grand.abacus.NamedGuiceObjectConstants.PAYPAL_EXPORTS
+import the.grand.abacus.NamedGuiceObjectConstants.SCOPES
+import the.grand.abacus.NamedGuiceObjectConstants.TOKENS_PATH
 import java.io.File
 import java.util.*
 import javax.inject.Named
 
-class AbacusModule : KotlinModule() {
+class AbacusModule : KotlinModule {
+
+    private val configDir: File
+
+    constructor() {
+        configDir = File(CONFIG_DIR)
+    }
+
+    constructor(configDir: File) {
+        this.configDir = configDir
+    }
+
     @Provides
     @Singleton
     fun netHttpTransport(): NetHttpTransport {
@@ -28,46 +49,46 @@ class AbacusModule : KotlinModule() {
 
     @Provides
     @Singleton
-    @Named("SCOPES")
+    @Named(SCOPES)
     fun scopes(): List<String> {
         return listOf(SheetsScopes.SPREADSHEETS)
     }
 
     @Provides
     @Singleton
-    @Named("TOKENS_PATH")
+    @Named(TOKENS_PATH)
     fun tokenPath(): File {
-        return File("config/token")
+        return File(configDir, TOKEN_DIR)
     }
 
     @Provides
     @Singleton
-    @Named("CREDENTIALS_JSON")
+    @Named(NamedGuiceObjectConstants.CREDENTIALS_JSON)
     fun credentialsJsonFile(): File {
-        return File("config/credentials.json")
+        return File(configDir, CREDENTIALS_JSON)
     }
 
     @Provides
     @Singleton
-    @Named("CONFIG")
+    @Named(NamedGuiceObjectConstants.APP_PROPERTIES)
     fun configMap(): Properties {
         val config = Properties()
-        config.load(File("config/app.properties").inputStream())
+        config.load(File(configDir, APP_PROPERTIES).inputStream())
         return config
     }
 
     @Provides
     @Singleton
-    @Named("BANK_EXPORTS")
+    @Named(BANK_EXPORTS)
     fun exports(): File {
-        return File("config/bank")
+        return File(configDir, BANK_REPORT_DIR)
     }
 
     @Provides
     @Singleton
-    @Named("PAYPAL_EXPORTS")
+    @Named(PAYPAL_EXPORTS)
     fun paypal(): File {
-        return File("config/paypal")
+        return File(configDir, PAYPAL_REPORT_DIR)
     }
 
     @Provides
@@ -83,4 +104,22 @@ class AbacusModule : KotlinModule() {
             .setApplicationName(configuration.appName())
             .build()
     }
+}
+
+object NamedGuiceObjectConstants {
+    const val TOKENS_PATH = "TOKENS_PATH"
+    const val BANK_EXPORTS = "BANK_EXPORTS"
+    const val PAYPAL_EXPORTS = "PAYPAL_EXPORTS"
+    const val APP_PROPERTIES = "APP_PROPERTIES"
+    const val SCOPES = "SCOPES"
+    const val CREDENTIALS_JSON = "CREDENTIALS_JSON"
+}
+
+object GuiceConstants {
+    const val CONFIG_DIR = "config"
+    const val TOKEN_DIR = "token"
+    const val CREDENTIALS_JSON = "credentials.json"
+    const val APP_PROPERTIES = "app.properties"
+    const val BANK_REPORT_DIR = "bank"
+    const val PAYPAL_REPORT_DIR = "paypal"
 }
