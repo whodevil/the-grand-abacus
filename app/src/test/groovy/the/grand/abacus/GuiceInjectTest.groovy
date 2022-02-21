@@ -3,7 +3,6 @@ package the.grand.abacus
 import com.google.api.services.sheets.v4.Sheets
 import com.google.inject.AbstractModule
 import com.google.inject.Guice
-import com.google.inject.Module
 import com.google.inject.util.Modules
 import com.google.inject.Provides
 import com.google.inject.Singleton
