@@ -24,13 +24,13 @@ class BankingHandler @Inject constructor(
 ) {
     fun readBankExport(): Map<String, List<Transaction>> {
         logger.info { "parsing bank exports" }
-        return bankExports.listFiles()!!.associate { file->
+        return bankExports.listFiles()!!.associate { file ->
             val transactionList = transactionList(file)
             file.name.dropLast(4) to transactionList.transactions.map { transaction ->
                 val type = transactionType(transaction)
-                val group = group(transaction)
+                val group = group(transaction, type)
                 val date = ZonedDateTime.ofInstant(transaction.datePosted.toInstant(), ZoneId.systemDefault())
-                Transaction(group,type, transaction.name, date, transaction.amount)
+                Transaction(group, type, transaction.name, date, transaction.amount, TransactionSource.BANK)
             }
         }
     }
@@ -41,31 +41,38 @@ class BankingHandler @Inject constructor(
         return (unmarshal.messageSets.last().responseMessages.first() as BankStatementResponseTransaction).message.transactionList
     }
 
-    private fun transactionType(transaction: com.webcohesion.ofx4j.domain.data.common.Transaction) = when {
-        transaction.transactionType.equals(com.webcohesion.ofx4j.domain.data.common.TransactionType.DEBIT) -> TransactionType.DEBIT
-        transaction.transactionType.equals(com.webcohesion.ofx4j.domain.data.common.TransactionType.CREDIT) -> TransactionType.CREDIT
-        else -> TransactionType.UNKNOWN
-    }
+    private fun transactionType(transaction: com.webcohesion.ofx4j.domain.data.common.Transaction) =
+        when {
+            transaction.transactionType.equals(com.webcohesion.ofx4j.domain.data.common.TransactionType.DEBIT) -> TransactionType.DEBIT
+            transaction.transactionType.equals(com.webcohesion.ofx4j.domain.data.common.TransactionType.CREDIT) -> TransactionType.CREDIT
+            else -> TransactionType.UNKNOWN
+        }
 
-    private fun group(transaction: com.webcohesion.ofx4j.domain.data.common.Transaction) = when {
-        transaction.name.lowercase().contains("amazon") -> Group.AMAZON
-        transaction.name.lowercase().contains("paypal") -> Group.PAYPAL
-        else -> Group.OTHER
-    }
+    private fun group(transaction: com.webcohesion.ofx4j.domain.data.common.Transaction, type: TransactionType) =
+        when {
+            type == TransactionType.CREDIT -> Group.INCOME
+            transaction.name.lowercase().contains("amazon") -> Group.AMAZON
+            transaction.name.lowercase().contains("paypal") -> Group.PAYPAL
+            else -> Group.OTHER
+        }
 
     fun readPaypalExport(): Map<String, List<Transaction>> {
         logger.info { "parsing paypal exports" }
         return paypalExports.listFiles()!!.associate { file ->
             val completed: List<Transaction>
-            file.reader(Charsets.UTF_8).use{ reader ->
+            file.reader(Charsets.UTF_8).use { reader ->
                 val csvReader = CSVReader(reader).readAll()
                 csvReader.removeFirst()
+
                 completed = csvReader.filter {
                     it[5].equals("Completed")
                 }.filter {
-                    !it[4].startsWith("PreApproved")
+                    // Lyft requires special handling because it never has a non-PreApproved state
+                    !it[4].startsWith("PreApproved") || it[3].equals("Lyft")
                 }.map {
                     buildTransaction(it)
+                }.filter {
+                    it.amount != 0.0
                 }
             }
             file.name.dropLast(4) to completed
@@ -87,7 +94,8 @@ class BankingHandler @Inject constructor(
             type = transactionType,
             vendor = row[3],
             date = zonedDateTime,
-            amount = amount
+            amount = amount,
+            source = TransactionSource.PAYPAL
         )
     }
 }
@@ -110,4 +118,16 @@ enum class TransactionType {
     UNKNOWN
 }
 
-data class Transaction(val group: Group, val type: TransactionType, val vendor: String, val date: ZonedDateTime, val amount: Double)
+enum class TransactionSource {
+    PAYPAL,
+    BANK
+}
+
+data class Transaction(
+    val group: Group,
+    val type: TransactionType,
+    val vendor: String,
+    val date: ZonedDateTime,
+    val amount: Double,
+    val source: TransactionSource
+)
