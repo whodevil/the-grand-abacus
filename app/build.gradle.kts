@@ -1,5 +1,6 @@
 plugins {
     id("org.jetbrains.kotlin.jvm") version "1.5.31"
+    id("org.jetbrains.kotlin.plugin.allopen") version "1.5.31"
     id("org.owasp.dependencycheck") version "6.5.3"
     groovy
     application
@@ -29,11 +30,16 @@ dependencies {
     implementation("com.webcohesion.ofx4j:ofx4j:1.31")
     implementation("org.ccil.cowan.tagsoup:tagsoup:1.2")
     implementation("com.opencsv:opencsv:5.5.2")
+    implementation("org.apache.commons:commons-lang3:3.12.0")
 
     testImplementation("org.spockframework:spock-core:2.0-groovy-3.0")
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.6.0")
     testImplementation("org.jacoco:org.jacoco.agent:${jacocoVersion}:runtime")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
+}
+
+allOpen {
+    annotation("the.grand.abacus.OpenForTesting")
 }
 
 dependencyCheck {
