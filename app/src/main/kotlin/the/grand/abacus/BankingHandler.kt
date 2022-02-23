@@ -20,7 +20,8 @@ private val logger = KotlinLogging.logger {}
 
 class BankingHandler @Inject constructor(
     @Named(BANK_EXPORTS) private val bankExports: File,
-    @Named(PAYPAL_EXPORTS) private val paypalExports: File
+    @Named(PAYPAL_EXPORTS) private val paypalExports: File,
+    private val groupingRules: GroupingRules
 ) {
     fun readBankExport(): Map<String, List<Transaction>> {
         logger.info { "parsing bank exports" }
@@ -28,9 +29,9 @@ class BankingHandler @Inject constructor(
             val transactionList = transactionList(file)
             file.name.dropLast(4) to transactionList.transactions.map { transaction ->
                 val type = transactionType(transaction)
-                val group = group(transaction, type)
+                val group = groupingRules.match(transaction.name, transaction.memo, TransactionSource.BANK)
                 val date = ZonedDateTime.ofInstant(transaction.datePosted.toInstant(), ZoneId.systemDefault())
-                Transaction(group, type, transaction.name, date, transaction.amount, TransactionSource.BANK)
+                Transaction(group, type, transaction.name, date, transaction.amount, TransactionSource.BANK, transaction.memo)
             }
         }
     }
@@ -70,7 +71,7 @@ class BankingHandler @Inject constructor(
                     // Lyft requires special handling because it never has a non-PreApproved state
                     !it[4].startsWith("PreApproved") || it[3].equals("Lyft")
                 }.map {
-                    buildTransaction(it)
+                    buildTransactionFromPaypalData(it)
                 }.filter {
                     it.amount != 0.0
                 }
@@ -79,7 +80,7 @@ class BankingHandler @Inject constructor(
         }
     }
 
-    private fun buildTransaction(row: Array<String>): Transaction {
+    private fun buildTransactionFromPaypalData(row: Array<String>): Transaction {
         val formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm:ss z")
         val zonedDateTime = ZonedDateTime.parse("${row[0]} ${row[1]} ${row[2]}", formatter)
 
@@ -89,13 +90,16 @@ class BankingHandler @Inject constructor(
             amount > 0 -> TransactionType.CREDIT
             else -> TransactionType.UNKNOWN
         }
+        val vendor = row[3]
+        val memo = row[4]
         return Transaction(
-            group = Group.PAYPAL,
+            group = groupingRules.match(vendor, memo, TransactionSource.PAYPAL),
             type = transactionType,
-            vendor = row[3],
+            vendor = vendor,
             date = zonedDateTime,
             amount = amount,
-            source = TransactionSource.PAYPAL
+            source = TransactionSource.PAYPAL,
+            memo = row[4]
         )
     }
 }
@@ -108,6 +112,7 @@ enum class Group(name: String) {
     UTILITIES("utilities"),
     DINING_OUT("dining out"),
     GROCERIES("groceries"),
+    TRANSPORTATION("transportation"),
     HOUSE_HOLD("house hold"),
     SAVINGS("savings")
 }
@@ -118,9 +123,14 @@ enum class TransactionType {
     UNKNOWN
 }
 
-enum class TransactionSource {
-    PAYPAL,
-    BANK
+enum class TransactionSource(name: String) {
+    PAYPAL("paypal"),
+    BANK("bank")
+}
+
+enum class TransactionField(name: String) {
+    NAME("name"),
+    MEMO("memo")
 }
 
 data class Transaction(
@@ -129,5 +139,6 @@ data class Transaction(
     val vendor: String,
     val date: ZonedDateTime,
     val amount: Double,
-    val source: TransactionSource
+    val source: TransactionSource,
+    val memo: String
 )
