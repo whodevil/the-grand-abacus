@@ -10,7 +10,7 @@ import static the.grand.abacus.GroupingRules.GROUP_RULES_START_COLUMN
 class GroupingRulesTest extends Specification {
     def "test fetching rules"() {
         given:
-        String matcher = "matcher"
+        String matcher = "PAYPAL"
         String group = "PAYPAL"
         String source = "BANK"
         String type = "CREDIT"
@@ -29,14 +29,8 @@ class GroupingRulesTest extends Specification {
             return list
         }
 
-        groupingRules.getRules().size() == 1
-        groupingRules.getRules().first() == new GroupingRule(
-                matcher,
-                Group.valueOf(group),
-                TransactionSource.valueOf(source),
-                TransactionType.valueOf(type),
-                TransactionField.valueOf(field)
-        )
+        groupingRules.getRules().size() == 2
+        groupingRules.getRules().contains(groupingRules.defaultRules.first())
         foundGroup == Group.PAYPAL
     }
 }

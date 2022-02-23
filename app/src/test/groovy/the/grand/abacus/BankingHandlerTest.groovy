@@ -13,8 +13,6 @@ import static the.grand.abacus.Group.INCOME
 import static the.grand.abacus.Group.OTHER
 import static the.grand.abacus.Group.TRANSPORTATION
 import static the.grand.abacus.TestingConstants.*
-import static the.grand.abacus.TestingConstants.CREDIT_NAME
-import static the.grand.abacus.TestingConstants.CREDIT_NAME
 import static the.grand.abacus.TransactionSource.BANK
 import static the.grand.abacus.TransactionSource.PAYPAL
 import static the.grand.abacus.TransactionType.CREDIT
@@ -30,12 +28,14 @@ class BankingHandlerTest extends Specification {
     @TempDir
     File paypalExportsDir
 
-    @Shared
-    BankingHandler bankingHandler
-
     def setupSpec() {
         new File(bankingExportsDir, "${FILE_DATE}.ofx") << OFX_DATA
         new File(paypalExportsDir, "${FILE_DATE}.csv") << PAYPAL_CSV
+    }
+
+    @Unroll
+    def "test reading #matcher"() {
+        given:
         def groupingRules = new GroupingRules(
                 Mock(SheetUtils),
                 Lists.newArrayList(
@@ -46,11 +46,42 @@ class BankingHandlerTest extends Specification {
                         new GroupingRule("Instacart", GROCERIES, PAYPAL, DEBIT, TransactionField.NAME),
                         new GroupingRule("AMAZON", AMAZON, BANK, DEBIT, TransactionField.NAME)
                 ))
-        bankingHandler = new BankingHandler(bankingExportsDir, paypalExportsDir, groupingRules)
+        def bankingHandler = new BankingHandler(bankingExportsDir, paypalExportsDir, groupingRules)
+        def dataSet = [:]
+        dataSet[PAYPAL] = bankingHandler.readPaypalExport()
+        dataSet[BANK] = bankingHandler.readBankExport()
+
+        when:
+        List<Transaction> observed = dataSet[source][FILE_DATE].findAll {
+            it.vendor.contains(matcher) && it.group == group && it.type == type && it.source == source
+        }
+
+        then:
+        dataSet[source][FILE_DATE] != null
+        observed.size() == expected
+
+        where:
+        matcher     | group          | type   | source || expected
+        "PAYPAL"    | Group.PAYPAL   | DEBIT  | BANK   || 1
+        CREDIT_NAME | INCOME         | CREDIT | BANK   || 1
+        "AMAZON"    | AMAZON         | DEBIT  | BANK   || 1
+        "Adobe"     | OTHER          | DEBIT  | PAYPAL || 1
+        "GrubHub"   | DINING_OUT     | DEBIT  | PAYPAL || 1
+        "Instacart" | GROCERIES      | DEBIT  | PAYPAL || 1
+        "Lyft"      | TRANSPORTATION | DEBIT  | PAYPAL || 1
     }
 
     @Unroll
-    def "test reading #matcher"() {
+    def "test default rules #matcher"() {
+        given:
+        def sheetUtils = Mock(SheetUtils)
+        sheetUtils.fetchValues(GroupingRules.GROUP_RULES_QUERY) >> [[""]]
+        def groupingRules = new GroupingRules(sheetUtils)
+        def bankingHandler = new BankingHandler(bankingExportsDir, paypalExportsDir, groupingRules)
+        groupingRules.fetchRules()
+        def dataSet = bankingHandler.readBankExport()
+
+
         when:
         List<Transaction> observed = dataSet[FILE_DATE].findAll {
             it.vendor.contains(matcher) && it.group == group && it.type == type && it.source == source
@@ -61,13 +92,8 @@ class BankingHandlerTest extends Specification {
         observed.size() == expected
 
         where:
-        dataSet                           | matcher     | group          | type   | source || expected
-        bankingHandler.readBankExport()   | "PAYPAL"    | Group.PAYPAL   | DEBIT  | BANK   || 1
-        bankingHandler.readBankExport()   | CREDIT_NAME | INCOME         | CREDIT | BANK   || 1
-        bankingHandler.readBankExport()   | "AMAZON"    | AMAZON         | DEBIT  | BANK   || 1
-        bankingHandler.readPaypalExport() | "Adobe"     | OTHER          | DEBIT  | PAYPAL || 1
-        bankingHandler.readPaypalExport() | "GrubHub"   | DINING_OUT     | DEBIT  | PAYPAL || 1
-        bankingHandler.readPaypalExport() | "Instacart" | GROCERIES      | DEBIT  | PAYPAL || 1
-        bankingHandler.readPaypalExport() | "Lyft"      | TRANSPORTATION | DEBIT  | PAYPAL || 1
+        matcher  | group        | type  | source || expected
+        "PAYPAL" | Group.PAYPAL | DEBIT | BANK   || 1
+        "AMAZON" | AMAZON       | DEBIT | BANK   || 1
     }
 }

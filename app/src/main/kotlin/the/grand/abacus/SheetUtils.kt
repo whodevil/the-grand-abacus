@@ -12,50 +12,81 @@ class SheetUtils @Inject constructor(
     private val configuration: Configuration,
     private val service: Sheets
 ) {
-    //TODO figure out the best way to make this more general and configurable
-    fun post(
-        body: ValueRange,
-        sheetName: String,
-        range: String
-    ) {
-        val found = findSheetByName(sheetName)
-        batchUpdateSheetRequest(Request()
-            .setRepeatCell(
-                RepeatCellRequest()
-                    .setCell(
-                        CellData()
-                            .setUserEnteredFormat(
-                                CellFormat()
-                                    .setBackgroundColor(
-                                        Color()
-                                            .setRed(java.lang.Float.valueOf("0"))
-                                            .setGreen(java.lang.Float.valueOf("1"))
-                                            .setBlue(java.lang.Float.valueOf("1"))
-                                    )
-                                    .setTextFormat(
-                                        TextFormat()
-                                            .setFontSize(12)
-                                            .setBold(java.lang.Boolean.TRUE)
-                                    )
-                            )
-                    )
-                    .setRange(
-                        GridRange()
-                            .setSheetId(found!!.properties.sheetId)
-                            .setStartRowIndex(0)
-                            .setEndRowIndex(1)
-                            .setStartColumnIndex(4)
-                            .setEndColumnIndex(5)
-                    )
-                    .setFields("*")
-            ))
 
-        service.spreadsheets().values().update(configuration.spreadSheetId(), "${sheetName}!${range}", body)
-            .setValueInputOption("RAW")
-            .execute()
+    val bold = TextFormat()
+        .setBold(java.lang.Boolean.TRUE)!!
+    val teal = Color()
+        .setRed(0f)
+        .setGreen(1f)
+        .setBlue(1f)!!
+
+    val yellow = Color()
+        .setRed(1f)
+        .setGreen(1f)
+        .setBlue(0f)!!
+
+    fun yellowCells(gridRange: GridRange) {
+        styling(gridRange,
+            CellFormat()
+                .setBackgroundColor(
+                    yellow
+                )
+                .setTextFormat(
+                    bold
+                ))
     }
 
-    private fun findSheetByName(name: String): Sheet? {
+    fun tealCells(gridRange: GridRange) {
+        styling(gridRange,
+            CellFormat()
+            .setBackgroundColor(
+                teal
+            )
+            .setTextFormat(
+                bold
+            ))
+    }
+
+    fun styling(
+        gridRange: GridRange,
+        cellFormat: CellFormat
+    ) {
+        batchUpdateSheetRequest(
+            Request()
+                .setRepeatCell(
+                    RepeatCellRequest()
+                        .setCell(
+                            CellData()
+                                .setUserEnteredFormat(
+                                    cellFormat
+                                )
+                        )
+                        .setRange(gridRange)
+                        .setFields("*")
+                )
+        )
+    }
+
+    fun clearStyling(
+        gridRange: GridRange
+    ) {
+        batchUpdateSheetRequest(
+            Request()
+                .setRepeatCell(
+                    RepeatCellRequest()
+                        .setCell(
+                            CellData()
+                                .setUserEnteredFormat(
+                                    CellFormat()
+                                )
+                        )
+                        .setRange(gridRange)
+                        .setFields("*")
+                )
+        )
+    }
+
+    fun findSheetByName(name: String): Sheet? {
         return getSheetsObject().sheets.find {
             it.properties.title == name
         }
