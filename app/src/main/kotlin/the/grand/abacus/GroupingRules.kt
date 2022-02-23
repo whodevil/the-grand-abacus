@@ -30,7 +30,8 @@ class GroupingRules @Inject constructor(private val sheetUtils: SheetUtils) {
     }
 
     private var rules: ArrayList<GroupingRule> = Lists.newArrayList()
-    private val defaultRules = listOf(
+    @VisibleForTesting
+    val defaultRules = listOf(
         GroupingRule("AMAZON", AMAZON, BANK, DEBIT, NAME),
         GroupingRule("PAYPAL", PAYPAL, BANK, DEBIT, NAME)
     )
