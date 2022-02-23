@@ -21,21 +21,27 @@ class App @Inject constructor(
     fun go() {
         groupingRules.refreshGroupRulesInfo()
         val readBankExport = bankingHandler.readBankExport()
-        readBankExport.keys.forEach { month ->
+        readBankExport.keys.forEach { key ->
+            val month = key.split(" ").last()
             sheetUtils.createTab(month)
             val year = updateYearData(month)
             val bankTransactions = readBankExport[month] ?: listOf()
             val paypalData = bankingHandler.readPaypalExport()[month]
             val transactions = bankTransactions + paypalData as List<Transaction>
             val bucket = Maps.newHashMap<Group, Double>()
-            val rawValues = Lists.newArrayList<List<Any>>(listOf("Date", "Source", "Vendor", "Memo", "Type", "Amount"))
+            val rawValues = Lists.newArrayList<List<Any>>(listOf("Date", "Source", "Account", "Vendor", "Memo", "Type", "Amount"))
             rawValues.addAll(transactions.map {
+                if(it.group == Group.OTHER) {
+                    logger.info{
+                        "OTHER TRANSACTION: ${it.vendor}"
+                    }
+                }
                 accumulate(bucket, it.group, it.amount)
                 val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-                listOf(formatter.format(it.date), it.source.name, it.vendor, it.memo, it.type.toString(), it.amount)
+                listOf(formatter.format(it.date), it.source.name, it.account, it.vendor, it.memo, it.type.toString(), it.amount)
             })
-            val bucketedValues = ValueRange().setValues(bucket.keys.map {
-                listOf(it.name,bucket[it])
+            val bucketedValues = ValueRange().setValues(Group.values().map{
+                listOf(it.name, bucket[it] ?: "")
             })
             sheetUtils.post(ValueRange().setValues(rawValues), "${month}!A1")
             sheetUtils.post(bucketedValues, "${year}!A2")
