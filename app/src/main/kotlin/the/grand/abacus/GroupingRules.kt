@@ -8,6 +8,7 @@ import com.google.inject.Inject
 import com.google.inject.Singleton
 import the.grand.abacus.Group.AMAZON
 import the.grand.abacus.Group.PAYPAL
+import the.grand.abacus.TransactionField.MEMO
 import the.grand.abacus.TransactionField.NAME
 import the.grand.abacus.TransactionSource.BANK
 import the.grand.abacus.TransactionType.*
@@ -45,7 +46,8 @@ class GroupingRules @Inject constructor(private val sheetUtils: SheetUtils) {
         sheetUtils.createTab(GROUP_RULES, true)
         val sheet = sheetUtils.findSheetByName(GROUP_RULES)
         val sheetId = sheet!!.properties.sheetId
-        sheetUtils.clearStyling(GridRange().setSheetId(sheetId))
+        sheetUtils.clearStyling(GridRange().setSheetId(sheetId).setStartRowIndex(0).setEndRowIndex(1))
+        sheetUtils.clearStyling(GridRange().setSheetId(sheetId).setStartColumnIndex(0).setEndColumnIndex(1))
         rulesHeader(sheetId)
         groupKeyInfo()
         val sourceNameRowNumber = sourceKeyInfo(sheetId)
@@ -134,7 +136,7 @@ class GroupingRules @Inject constructor(private val sheetUtils: SheetUtils) {
     fun fetchRules() {
         val returnValue =
             sheetUtils.fetchValues(GROUP_RULES_QUERY)
-        if(returnValue.isNotEmpty() || returnValue.first().size == 1) {
+        if(returnValue.isNotEmpty() && returnValue.first().size == 1) {
             rules += defaultRules
             return
         }
@@ -153,7 +155,10 @@ class GroupingRules @Inject constructor(private val sheetUtils: SheetUtils) {
 
     fun match(name: String, memo: String, source: TransactionSource): Group {
         return rules.firstOrNull {
-            name.contains(it.matcher) && source == it.source
+            when(it.field) {
+                NAME -> name.contains(it.matcher) && source == it.source
+                MEMO -> memo.contains(it.matcher) && source == it.source
+            }
         }?.group ?: Group.OTHER
     }
 }

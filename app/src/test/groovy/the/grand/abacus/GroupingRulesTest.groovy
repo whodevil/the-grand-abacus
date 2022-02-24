@@ -29,8 +29,7 @@ class GroupingRulesTest extends Specification {
             return list
         }
 
-        groupingRules.getRules().size() == 2
-        groupingRules.getRules().contains(groupingRules.defaultRules.first())
+        groupingRules.getRules().size() == 1
         foundGroup == Group.PAYPAL
     }
 }

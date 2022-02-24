@@ -1,5 +1,7 @@
 package the.grand.abacus
 
+import com.google.common.collect.Lists
+import com.google.common.collect.Maps
 import com.google.inject.Inject
 import com.opencsv.CSVReader
 import com.webcohesion.ofx4j.domain.data.ResponseEnvelope
@@ -25,14 +27,19 @@ class BankingHandler @Inject constructor(
 ) {
     fun readBankExport(): Map<String, List<Transaction>> {
         logger.info { "parsing bank exports" }
-        return bankExports.listFiles()!!.associate { file ->
+        return bankExports.listFiles()!!.map { file ->
             val transactionList = transactionList(file)
+            val account = file.name.split(" ").first()
             file.name.dropLast(4) to transactionList.transactions.map { transaction ->
                 val type = transactionType(transaction)
                 val group = groupingRules.match(transaction.name, transaction.memo, TransactionSource.BANK)
                 val date = ZonedDateTime.ofInstant(transaction.datePosted.toInstant(), ZoneId.systemDefault())
-                Transaction(group, type, transaction.name, date, transaction.amount, TransactionSource.BANK, transaction.memo)
+                Transaction(group, type, transaction.name, date, transaction.amount, TransactionSource.BANK, transaction.memo, account)
             }
+        }.toList().fold(mutableMapOf<String, List<Transaction>>()) { acc, pair ->
+            val key = pair.first.split(" ").last()
+            acc[key] = acc[key]?.plus(pair.second) ?: pair.second
+            acc
         }
     }
 
@@ -46,15 +53,7 @@ class BankingHandler @Inject constructor(
         when {
             transaction.transactionType.equals(com.webcohesion.ofx4j.domain.data.common.TransactionType.DEBIT) -> TransactionType.DEBIT
             transaction.transactionType.equals(com.webcohesion.ofx4j.domain.data.common.TransactionType.CREDIT) -> TransactionType.CREDIT
-            else -> TransactionType.UNKNOWN
-        }
-
-    private fun group(transaction: com.webcohesion.ofx4j.domain.data.common.Transaction, type: TransactionType) =
-        when {
-            type == TransactionType.CREDIT -> Group.INCOME
-            transaction.name.lowercase().contains("amazon") -> Group.AMAZON
-            transaction.name.lowercase().contains("paypal") -> Group.PAYPAL
-            else -> Group.OTHER
+            else -> throw java.lang.UnsupportedOperationException("Found Unknown Transaction Type")
         }
 
     fun readPaypalExport(): Map<String, List<Transaction>> {
@@ -88,7 +87,7 @@ class BankingHandler @Inject constructor(
         val transactionType = when {
             amount <= 0 -> TransactionType.DEBIT
             amount > 0 -> TransactionType.CREDIT
-            else -> TransactionType.UNKNOWN
+            else -> throw java.lang.UnsupportedOperationException("Found an unknown transaction type")
         }
         val vendor = row[3]
         val memo = row[4]
@@ -99,7 +98,8 @@ class BankingHandler @Inject constructor(
             date = zonedDateTime,
             amount = amount,
             source = TransactionSource.PAYPAL,
-            memo = row[4]
+            memo = row[4],
+            ""
         )
     }
 }
@@ -113,14 +113,18 @@ enum class Group(name: String) {
     DINING_OUT("dining out"),
     GROCERIES("groceries"),
     TRANSPORTATION("transportation"),
-    HOUSE_HOLD("house hold"),
-    SAVINGS("savings")
+    HOUSE("house"),
+    SAVINGS("savings"),
+    BARS("bars"),
+    CABLE("cable"),
+    STUDENT_DEBT("student debt"),
+    RENT("rent"),
+    HOBBIES("hobbies")
 }
 
 enum class TransactionType {
     CREDIT,
-    DEBIT,
-    UNKNOWN
+    DEBIT
 }
 
 enum class TransactionSource(name: String) {
@@ -140,5 +144,6 @@ data class Transaction(
     val date: ZonedDateTime,
     val amount: Double,
     val source: TransactionSource,
-    val memo: String
+    val memo: String,
+    val account: String
 )
