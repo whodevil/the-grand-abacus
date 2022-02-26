@@ -20,4 +20,10 @@ class Configuration @Inject constructor(
     fun userId(): String {
         return config.getProperty("userId")
     }
+
+    fun ignoreGroups(): List<Group> {
+        return config.getProperty("ignoredGroups").split(",").map{
+            Group.valueOf(it)
+        }
+    }
 }
