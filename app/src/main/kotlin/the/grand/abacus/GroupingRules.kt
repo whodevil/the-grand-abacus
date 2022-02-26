@@ -23,7 +23,7 @@ class GroupingRules @Inject constructor(private val sheetUtils: SheetUtils) {
     }
 
     companion object {
-        const val GROUP_RULES_END_COLUMN = "F"
+        const val GROUP_RULES_END_COLUMN = "G"
         const val GROUP_RULES_START_COLUMN = "B"
         const val GROUP_RULES = "Group Rules"
         const val GROUP_NAMES_KEY_ROW_NUMBER = 2
@@ -63,7 +63,7 @@ class GroupingRules @Inject constructor(private val sheetUtils: SheetUtils) {
                 .setStartRowIndex(0)
                 .setEndRowIndex(1)
                 .setStartColumnIndex(1)
-                .setEndColumnIndex(6)
+                .setEndColumnIndex(7)
         )
 
         sheetUtils.tealCells(
@@ -76,7 +76,7 @@ class GroupingRules @Inject constructor(private val sheetUtils: SheetUtils) {
         )
 
         val groupDataHeaders =
-            Lists.newArrayList<List<Any>>(listOf("Matcher", "Group Name", "Source", "Transaction Type", "Field"))
+            Lists.newArrayList<List<Any>>(listOf("Matcher", "Group Name", "Source", "Transaction Type", "Field", "Account"))
         sheetUtils.post(ValueRange().setValues(groupDataHeaders), "${GROUP_RULES}!B1")
     }
 
@@ -141,24 +141,29 @@ class GroupingRules @Inject constructor(private val sheetUtils: SheetUtils) {
             return
         }
         returnValue.forEach { row ->
+            val account = if(row.size == 6) row[5] as String else ""
             rules.add(
                 GroupingRule(
                     matcher = row[0] as String,
                     group = Group.valueOf(row[1] as String),
                     source = TransactionSource.valueOf(row[2] as String),
                     type = valueOf(row[3] as String),
-                    field = TransactionField.valueOf(row[4] as String)
+                    field = TransactionField.valueOf(row[4] as String),
+                    account = account
                 )
             )
         }
     }
 
-    fun match(name: String, memo: String, source: TransactionSource): Group {
+    fun match(name: String, memo: String, source: TransactionSource, account: String = ""): Group {
         return rules.firstOrNull {
-            when(it.field) {
-                NAME -> name.contains(it.matcher) && source == it.source
-                MEMO -> memo.contains(it.matcher) && source == it.source
+            val accountMatch = account.isEmpty() || it.account.isEmpty() || account.equals(it.account)
+            val sourceMatch = source == it.source
+            val fieldMatch = when(it.field) {
+                NAME -> name.contains(it.matcher)
+                MEMO -> memo.contains(it.matcher)
             }
+            sourceMatch && accountMatch && fieldMatch
         }?.group ?: Group.OTHER
     }
 }
@@ -168,5 +173,6 @@ data class GroupingRule(
     val group: Group,
     val source: TransactionSource,
     val type: TransactionType,
-    val field: TransactionField
+    val field: TransactionField,
+    val account: String = ""
 )

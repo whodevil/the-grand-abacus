@@ -20,7 +20,7 @@ class GroupingRulesTest extends Specification {
 
         when:
         groupingRules.fetchRules()
-        Group foundGroup = groupingRules.match(matcher, "memo", TransactionSource.BANK)
+        Group foundGroup = groupingRules.match(matcher, "memo", TransactionSource.BANK, "")
 
         then:
         1 * sheetUtils.fetchValues("${GROUP_RULES}!${GROUP_RULES_START_COLUMN}2:${GROUP_RULES_END_COLUMN}") >> {

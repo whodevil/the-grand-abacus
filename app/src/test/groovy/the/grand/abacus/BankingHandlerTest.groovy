@@ -39,12 +39,12 @@ class BankingHandlerTest extends Specification {
         def groupingRules = new GroupingRules(
                 Mock(SheetUtils),
                 Lists.newArrayList(
-                        new GroupingRule("Lyft", TRANSPORTATION, PAYPAL, DEBIT, TransactionField.NAME),
-                        new GroupingRule("GrubHub", DINING_OUT, PAYPAL, DEBIT, TransactionField.NAME),
-                        new GroupingRule(CREDIT_NAME, INCOME, BANK, CREDIT, TransactionField.NAME),
-                        new GroupingRule("PAYPAL", Group.PAYPAL, BANK, DEBIT, TransactionField.NAME),
-                        new GroupingRule("Instacart", GROCERIES, PAYPAL, DEBIT, TransactionField.NAME),
-                        new GroupingRule("AMAZON", AMAZON, BANK, DEBIT, TransactionField.NAME)
+                        new GroupingRule("Lyft", TRANSPORTATION, PAYPAL, DEBIT, TransactionField.NAME, ""),
+                        new GroupingRule("GrubHub", DINING_OUT, PAYPAL, DEBIT, TransactionField.NAME, ""),
+                        new GroupingRule(CREDIT_NAME, INCOME, BANK, CREDIT, TransactionField.NAME, ""),
+                        new GroupingRule("PAYPAL", Group.PAYPAL, BANK, DEBIT, TransactionField.NAME, ""),
+                        new GroupingRule("Instacart", GROCERIES, PAYPAL, DEBIT, TransactionField.NAME, ""),
+                        new GroupingRule("AMAZON", AMAZON, BANK, DEBIT, TransactionField.NAME, "")
                 ))
         def bankingHandler = new BankingHandler(bankingExportsDir, paypalExportsDir, groupingRules)
         def dataSet = [:]

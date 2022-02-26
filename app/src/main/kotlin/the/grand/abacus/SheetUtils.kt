@@ -4,6 +4,7 @@ import com.google.api.services.sheets.v4.Sheets
 import com.google.api.services.sheets.v4.model.*
 import com.google.inject.Inject
 import mu.KotlinLogging
+import java.util.*
 
 private val logger = KotlinLogging.logger {}
 
@@ -26,25 +27,29 @@ class SheetUtils @Inject constructor(
         .setBlue(0f)!!
 
     fun yellowCells(gridRange: GridRange) {
-        styling(gridRange,
+        styling(
+            gridRange,
             CellFormat()
                 .setBackgroundColor(
                     yellow
                 )
                 .setTextFormat(
                     bold
-                ))
+                )
+        )
     }
 
     fun tealCells(gridRange: GridRange) {
-        styling(gridRange,
+        styling(
+            gridRange,
             CellFormat()
-            .setBackgroundColor(
-                teal
-            )
-            .setTextFormat(
-                bold
-            ))
+                .setBackgroundColor(
+                    teal
+                )
+                .setTextFormat(
+                    bold
+                )
+        )
     }
 
     fun styling(
@@ -112,6 +117,15 @@ class SheetUtils @Inject constructor(
             val request = Request().setAddSheet(AddSheetRequest().setProperties(sheetProperties))
             batchUpdateSheetRequest(request)
         }
+    }
+
+    fun postFormula(
+        body: ValueRange,
+        range: String
+    ) {
+        service.spreadsheets().values().update(configuration.spreadSheetId(), range, body)
+            .setValueInputOption("USER_ENTERED")
+            .execute()
     }
 
     private fun batchUpdateSheetRequest(request: Request) {

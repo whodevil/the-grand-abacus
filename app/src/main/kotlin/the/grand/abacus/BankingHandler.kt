@@ -28,11 +28,12 @@ class BankingHandler @Inject constructor(
     fun readBankExport(): Map<String, List<Transaction>> {
         logger.info { "parsing bank exports" }
         return bankExports.listFiles()!!.map { file ->
+            logger.info{"Processing ${file.name}"}
             val transactionList = transactionList(file)
             val account = file.name.split(" ").first()
             file.name.dropLast(4) to transactionList.transactions.map { transaction ->
                 val type = transactionType(transaction)
-                val group = groupingRules.match(transaction.name, transaction.memo, TransactionSource.BANK)
+                val group = groupingRules.match(transaction.name, transaction.memo, TransactionSource.BANK, account)
                 val date = ZonedDateTime.ofInstant(transaction.datePosted.toInstant(), ZoneId.systemDefault())
                 Transaction(group, type, transaction.name, date, transaction.amount, TransactionSource.BANK, transaction.memo, account)
             }
@@ -66,9 +67,6 @@ class BankingHandler @Inject constructor(
 
                 completed = csvReader.filter {
                     it[5].equals("Completed")
-                }.filter {
-                    // Lyft requires special handling because it never has a non-PreApproved state
-                    !it[4].startsWith("PreApproved") || it[3].equals("Lyft")
                 }.map {
                     buildTransactionFromPaypalData(it)
                 }.filter {
@@ -105,21 +103,26 @@ class BankingHandler @Inject constructor(
 }
 
 enum class Group(name: String) {
+    RENT("rent"),
+    UTILITIES("utilities"),
+    TRANSPORTATION("transportation"),
+    STUDENT_DEBT("student debt"),
+    GROCERIES("groceries"),
+    DINING_OUT("dining out"),
+    BARS("bars"),
+    HOUSE("house"),
+    HOBBIES("hobbies"),
+    ENTERTAINMENT("entertainment"),
+    HEALTHCARE("healthcare"),
+    APPLE("apple"),
+    VENMO("venmo"),
     PAYPAL("paypal"),
     AMAZON("amazon"),
     OTHER("other"),
+    CREDIT_CARD("credit card"),
+    TRANSFERS("transfers"),
     INCOME("income"),
-    UTILITIES("utilities"),
-    DINING_OUT("dining out"),
-    GROCERIES("groceries"),
-    TRANSPORTATION("transportation"),
-    HOUSE("house"),
-    SAVINGS("savings"),
-    BARS("bars"),
-    CABLE("cable"),
-    STUDENT_DEBT("student debt"),
-    RENT("rent"),
-    HOBBIES("hobbies")
+    SAVINGS("savings")
 }
 
 enum class TransactionType {
