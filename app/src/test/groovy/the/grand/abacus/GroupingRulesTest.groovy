@@ -1,6 +1,6 @@
 package the.grand.abacus
 
-import org.assertj.core.util.Lists
+import com.google.common.collect.Lists
 import spock.lang.Specification
 
 import static the.grand.abacus.GroupingRules.GROUP_RULES

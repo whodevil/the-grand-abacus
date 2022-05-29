@@ -1,6 +1,6 @@
 package the.grand.abacus
 
-import org.assertj.core.util.Lists
+import com.google.common.collect.Lists
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.TempDir
